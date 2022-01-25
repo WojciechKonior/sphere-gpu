@@ -2,16 +2,28 @@
 #include <device_launch_parameters.h>
 #include <stdio.h>
 
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
+#include <World.h>
+#include <Field.h>
+#include <Source.h>
+#include <Species.h>
+#include <PotentialSolver.h>
+#include <Thruster.h>
+#include <Collisions.h>
+#include <Output.h>
 
-__global__ void addKernel(int *c, const int *a, const int *b)
-{
-    int i = threadIdx.x;
-    c[i] = a[i] + b[i];
-}
+cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
 int main()
 {
+    world_say_hello();
+    field_say_hello();
+    source_say_hello();
+    species_say_hello();
+    potential_solver_say_hello();
+    thruster_say_hello();
+    collisions_say_hello();
+    output_say_hello();
+
     const int arraySize = 5;
     const int a[arraySize] = { 1, 2, 3, 4, 5 };
     const int b[arraySize] = { 402, 20, 30, 40, 50 };
