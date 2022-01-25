@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project(sphere_gpu LANGUAGES CXX CUDA)
-SET(CMAKE_CUDA_COMPILER "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin/nvcc")
+set(CMAKE_CUDA_COMPILER "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin/nvcc")
 
 # add_library(collisions "include/Collisions.h" "src/Collisions.cpp")
 # add_library(field "include/Field.h" "src/Field.cpp")
@@ -16,7 +16,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-add_executable(sphere main.cu)
+add_executable(sphere src/Sphere.cu)
 set_property(TARGET sphere PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 # target_link_libraries(cuda PRIVATE particles)
 
