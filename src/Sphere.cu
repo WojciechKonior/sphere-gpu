@@ -19,7 +19,7 @@ int main()
     field_say_hello();
     source_say_hello();
     species_say_hello();
-    potential_solver_say_hello();
+    solver_say_hello();
     thruster_say_hello();
     collisions_say_hello();
     output_say_hello();

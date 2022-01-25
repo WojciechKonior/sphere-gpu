@@ -1,5 +1,5 @@
 #include <PotentialSolver.h>
 
-__host__ void potential_solver_say_hello(){
-	std::cout<<"PotentialSolver say hello"<<std::endl;
+__host__ void solver_say_hello(){
+	std::cout<<"Solver say hello"<<std::endl;
 }

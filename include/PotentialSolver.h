@@ -1,4 +1,8 @@
-#pragma once
+#ifndef _SOLVER_H
+#define _SOLVER_H
+
 #include <iostream>
 
-__host__ void potential_solver_say_hello();
+__host__ void solver_say_hello();
+
+#endif /* _SOLVER_H */
