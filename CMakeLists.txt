@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
-project(sphere_gpu LANGUAGES CXX CUDA)
-enable_testing()
-set(CMAKE_CUDA_COMPILER "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6/bin/nvcc")
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests/googletest)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+cmake_minimum_required(VERSION 3.14)
+project(my_project LANGUAGES CXX CUDA)
+
+# GoogleTest requires at least C++11
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE "RELEASE")
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -21,4 +22,28 @@ add_executable(
     "include/Output.h" "src/Output.cu"
 )
 
-set_property(TARGET Sphere PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+# Tests
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+add_executable(
+  tests
+  tests/demo_test.cc
+  tests/demo_test.cu
+)
+
+target_link_libraries(
+  tests
+  gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(tests)
