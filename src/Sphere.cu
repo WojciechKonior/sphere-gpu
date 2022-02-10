@@ -25,6 +25,7 @@ int main()
     const int a[arraySize] = { 1, 2, 3, 4, 5 };
     const int b[arraySize] = { 10, 20, 30, 40, 50 };
     int c[arraySize] = { 0 };
+    Particle particles[5];
   
     std::shared_ptr<Data> dataptr(new Data(arraySize));
     std::shared_ptr<Summator> sum(new Summator(dataptr));
@@ -35,7 +36,7 @@ int main()
         return 1;
     }
 
-    cudaStatus = sum->propagateParticles(arraySize);
+    cudaStatus = sum->propagateParticles(particles, arraySize);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "propagateParticles failed!");
         return 1;

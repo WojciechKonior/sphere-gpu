@@ -13,12 +13,12 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 __global__ void propagateParticlesKernel(Particle *particles)
 {
     int i = threadIdx.x;
-    particles[i].x += 1;
-    particles[i].y += 2;
-    particles[i].z += 3;
-    particles[i].vx += 0.1;
-    particles[i].vy += 0.2;
-    particles[i].vz += 0.3;
+    particles[i].x = 1;
+    particles[i].y = 2;
+    particles[i].z = 3;
+    particles[i].vx = 4;
+    particles[i].vy = 5;
+    particles[i].vz = 6;
 }
 
 Data::Data(unsigned int size)
@@ -127,7 +127,7 @@ void Summator::initializeParticles()
     dataptr->copyFromHostToDevice(particles);
 }
 
-cudaError_t Summator::propagateParticles(unsigned int size)
+cudaError_t Summator::propagateParticles(Particle *particles, unsigned int size)
 {
     propagateParticlesKernel<<<1, size>>>(dataptr->dev_parts);
 
@@ -144,6 +144,9 @@ cudaError_t Summator::propagateParticles(unsigned int size)
     {
         fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", dataptr->cudaStatus);
     }
+
+    // Copy output vector from GPU buffer to host memory.
+    dataptr->copyFromDeviceToHost(particles);
 
     return dataptr->cudaStatus;
 }

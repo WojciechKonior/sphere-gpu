@@ -49,7 +49,7 @@ class Summator {
 public:
     Summator(std::shared_ptr<Data> shptr);
     void initializeParticles();
-    cudaError_t propagateParticles(unsigned int size);
+    cudaError_t propagateParticles(Particle *particles, unsigned int size);
     cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 };
 
