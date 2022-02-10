@@ -13,7 +13,6 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
 int main()
 {
-    world_say_hello();
     field_say_hello();
     source_say_hello();
     species_say_hello();
@@ -26,11 +25,19 @@ int main()
     const int a[arraySize] = { 1, 2, 3, 4, 5 };
     const int b[arraySize] = { 10, 20, 30, 40, 50 };
     int c[arraySize] = { 0 };
+  
+    std::shared_ptr<Data> dataptr(new Data(arraySize));
+    std::shared_ptr<Summator> sum(new Summator(dataptr));
 
-    // Add vectors in parallel.
-    cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
+    cudaError_t cudaStatus = sum->addWithCuda(c, a, b, arraySize);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "addWithCuda failed!");
+        return 1;
+    }
+
+    cudaStatus = sum->propagateParticles(arraySize);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "propagateParticles failed!");
         return 1;
     }
 

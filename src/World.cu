@@ -1,92 +1,178 @@
 #include <World.h>
 
-__host__ std::string world_say_hello(){
-	std::cout<<"World say hello"<<std::endl;
-    return "World say hello";
-}
-
 __global__ void addKernel(int *c, const int *a, const int *b)
 {
     int i = threadIdx.x;
-    c[i] = a[i] + b[i];
+
+    Point *p = new Point(1, 2);
+    c[i] = p->getX() + p->getY() - 3 + a[i] + b[i];
+
+    delete p;
 }
 
-// Helper function for using CUDA to add vectors in parallel.
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
+__global__ void propagateParticlesKernel(Particle *particles)
 {
-    int *dev_a = 0;
-    int *dev_b = 0;
-    int *dev_c = 0;
-    cudaError_t cudaStatus;
+    int i = threadIdx.x;
+    particles[i].x += 1;
+    particles[i].y += 2;
+    particles[i].z += 3;
+    particles[i].vx += 0.1;
+    particles[i].vy += 0.2;
+    particles[i].vz += 0.3;
+}
+
+Data::Data(unsigned int size)
+{
+    this->size = size;
+    fprintf(stderr, "Data Constructor!!!\n");
 
     // Choose which GPU to run on, change this on a multi-GPU system.
     cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
+    if (cudaStatus != cudaSuccess)
+    {
         fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-        goto Error;
     }
 
     // Allocate GPU buffers for three vectors (two input, one output)    .
-    cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
+    cudaStatus = cudaMalloc((void **)&dev_c, size * sizeof(int));
+    if (cudaStatus != cudaSuccess)
+    {
         fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
     }
 
-    cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
+    cudaStatus = cudaMalloc((void **)&dev_a, size * sizeof(int));
+    if (cudaStatus != cudaSuccess)
+    {
         fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
     }
 
-    cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-    if (cudaStatus != cudaSuccess) {
+    cudaStatus = cudaMalloc((void **)&dev_b, size * sizeof(int));
+    if (cudaStatus != cudaSuccess)
+    {
         fprintf(stderr, "cudaMalloc failed!");
-        goto Error;
     }
 
-    // Copy input vectors from host memory to GPU buffers.
-    cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
+    cudaStatus = cudaMalloc((void **)&dev_parts, size * sizeof(Particle));
+    if (cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "cudaMalloc failed!");
     }
+}
 
-    cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-    // Launch a kernel on the GPU with one thread for each element.
-    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
-
-    // Check for any errors launching the kernel
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-        goto Error;
-    }
-    
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-        goto Error;
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-        goto Error;
-    }
-
-Error:
+Data::~Data()
+{
+    fprintf(stderr, "Data Destructor!!!\n");
     cudaFree(dev_c);
     cudaFree(dev_a);
     cudaFree(dev_b);
-    
-    return cudaStatus;
+    cudaFree(dev_parts);
+}
+
+void Data::copyFromHostToDevice(const int *host_data, int *dev_data)
+{
+    cudaStatus = cudaMemcpy(dev_data, host_data, size * sizeof(int), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+}
+
+void Data::copyFromDeviceToHost(const int *dev_data, int *host_data)
+{
+    cudaStatus = cudaMemcpy(host_data, dev_data, size * sizeof(int), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+}
+
+void Data::copyFromHostToDevice(const Particle *host_part)
+{
+    cudaStatus = cudaMemcpy(dev_parts, host_part, size * sizeof(Particle), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+}
+
+void Data::copyFromDeviceToHost(Particle *host_part)
+{
+    cudaStatus = cudaMemcpy(host_part, dev_parts, size * sizeof(Particle), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+}
+
+Summator::Summator(std::shared_ptr<Data> shptr)
+{
+    dataptr = shptr;
+    this->initializeParticles();
+}
+
+void Summator::initializeParticles()
+{
+    // const unsigned int s = const unsigned int(dataptr->size);
+    Particle particles[5];
+    for (int i = 0; i < 5; i++)
+    {
+        particles[i].x = 0;
+        particles[i].y = 0;
+        particles[i].z = 0;
+        particles[i].vx = 0;
+        particles[i].vy = 0;
+        particles[i].vz = 0;
+    }
+
+    dataptr->copyFromHostToDevice(particles);
+}
+
+cudaError_t Summator::propagateParticles(unsigned int size)
+{
+    propagateParticlesKernel<<<1, size>>>(dataptr->dev_parts);
+
+    // Check for any errors launching the kernel
+    dataptr->cudaStatus = cudaGetLastError();
+    if (dataptr->cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(dataptr->cudaStatus));
+    }
+
+    // cudaDeviceSynchronize waits for the kernel to finish, and returns any errors encountered during the launch.
+    dataptr->cudaStatus = cudaDeviceSynchronize();
+    if (dataptr->cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", dataptr->cudaStatus);
+    }
+
+    return dataptr->cudaStatus;
+}
+
+cudaError_t Summator::addWithCuda(int *c, const int *a, const int *b, unsigned int size)
+{
+    // Copy input vectors from host memory to GPU buffers.
+    dataptr->copyFromHostToDevice(a, dataptr->dev_a);
+    dataptr->copyFromHostToDevice(b, dataptr->dev_b);
+
+    // Launch a kernel on the GPU with one thread for each element.
+    addKernel<<<1, size>>>(dataptr->dev_c, dataptr->dev_a, dataptr->dev_b);
+
+    // Check for any errors launching the kernel
+    dataptr->cudaStatus = cudaGetLastError();
+    if (dataptr->cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(dataptr->cudaStatus));
+    }
+
+    // cudaDeviceSynchronize waits for the kernel to finish, and returns any errors encountered during the launch.
+    dataptr->cudaStatus = cudaDeviceSynchronize();
+    if (dataptr->cudaStatus != cudaSuccess)
+    {
+        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", dataptr->cudaStatus);
+    }
+
+    // Copy output vector from GPU buffer to host memory.
+    dataptr->copyFromDeviceToHost(dataptr->dev_c, c);
+
+    return dataptr->cudaStatus;
 }
